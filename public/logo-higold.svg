@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img">
+  <title>Higold Logo (placeholder)</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00b7ff"/>
+      <stop offset="1" stop-color="#0083c7"/>
+    </linearGradient>
+  </defs>
+  <circle cx="80" cy="80" r="76" fill="url(#g)"/>
+  <circle cx="80" cy="80" r="76" fill="none" stroke="#e6f5ff" stroke-width="8" opacity="0.6"/>
+  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="28" fill="#ffffff">HIGOLD</text>
+</svg>

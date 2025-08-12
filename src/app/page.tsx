@@ -1,103 +1,173 @@
-import Image from "next/image";
+import {headers} from "next/headers";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+type Action = { id: string; title: string; subtitle?: string; href: string; icon?: string };
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+interface CompanyProfile {
+    handle: string;
+    name?: string;
+    primaryColor?: string;
+    background?: string;
+    logo?: string;
+    about?: string;
+    actions?: Action[];
+    socials?: { id: string; title: string; subtitle?: string; href: string }[];
+    footer?: { text: string; linkText: string; href: string };
+}
+
+async function getCompany(): Promise<CompanyProfile> {
+    // Build an absolute base URL to avoid "Failed to parse URL from /api/company" on the server
+    const h = await headers();
+    const forwardedProto = h.get("x-forwarded-proto") ?? undefined;
+    const forwardedHost = h.get("x-forwarded-host") ?? undefined;
+    const host = forwardedHost ?? h.get("host") ?? undefined;
+
+    const envBase = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+    const base = envBase && /^https?:\/\//i.test(envBase)
+        ? envBase.replace(/\/$/, "")
+        : host
+            ? `${forwardedProto ?? "http"}://${host}`
+            : "http://localhost:3000";
+
+    const res = await fetch(`${base}/api/open/data/company`, {
+        cache: "no-store",
+    });
+    return res.json();
+}
+
+function Button({
+                    href,
+                    title,
+                    subtitle,
+                    icon,
+                    color,
+                }: {
+    href: string;
+    title: string;
+    subtitle?: string;
+    icon?: string;
+    color: string;
+}) {
+    return (
+        <a
+            href={href}
+            target={href.startsWith("http") ? "_blank" : undefined}
+            rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+            className="block w-full rounded-lg px-5 py-4 shadow-sm transition-transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-offset-2"
+            style={{
+                backgroundColor: `#0a3c69`,
+                color: "#fff",
+            }}
+        >
+            <div className="flex flex-col items-center text-center">
+                <div className="font-semibold" style={{color}}>{icon ? `${icon} ` : ""}{title}</div>
+                {subtitle && (
+                    <div className="text-xs opacity-90 mt-1" style={{color}}>{subtitle}</div>
+                )}
+            </div>
+        </a>
+    );
+}
+
+export default async function Home() {
+    const received = await getCompany();
+
+    // Defaults provided by you
+    const defaults = {
+        logo: "/ogo.png",
+        handle: "kengmakon",
+        phone: "+998 (98) 300 36 76",
+        phoneHref: "tel:+998983003676",
+        catalog: "https://kengmakon.uz/catalog/spalnyy-garnitur",
+        socials: {
+            telegram: "https://t.me/kengmakonuz",
+            instagram: "https://www.instagram.com/kengmakon.uzb/",
+            facebook: "https://www.facebook.com/profile.php?id=100085820027934",
+        },
+    } as const;
+
+    const color = "#fff"; // enforced primary color per requirement
+    const background = received.background ?? "#ffffff"; // pure white default
+    const logo = received.logo || defaults.logo;
+    const handle = received.handle || defaults.handle;
+
+    const actions: Action[] = (received.actions && received.actions.length > 0)
+        ? received.actions
+        : [
+            {
+                id: "call",
+                title: "Звонок",
+                subtitle: "Позвоните для подробной информации",
+                href: defaults.phoneHref,
+                icon: "📞"
+            },
+            {
+                id: "catalog",
+                title: "Каталог",
+                subtitle: "Ознакомьтесь с нашим каталогом",
+                href: defaults.catalog,
+                icon: "📘"
+            },
+        ];
+
+    const socials = (received.socials && received.socials.length > 0)
+        ? received.socials
+        : [
+            {id: "telegram", title: "Telegram", subtitle: "Подпишитесь на наш канал", href: defaults.socials.telegram},
+            {id: "instagram", title: "Instagram", subtitle: "Следите за новостями", href: defaults.socials.instagram},
+            {id: "facebook", title: "Facebook", subtitle: "Будьте в курсе новостей", href: defaults.socials.facebook},
+        ];
+
+    return (
+        <div className="min-h-dvh flex justify-center" style={{background}}>
+            <main className="w-full max-w-2xl px-4 sm:px-6 md:px-8 py-10">
+                <div className="flex flex-col items-center gap-3">
+
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        borderRadius: '50%',
+                        overflow: 'hidden',
+                        width: '150px',
+                        height: '150px',
+                        backgroundColor: '#0a3c69',
+                    }}>
+
+                    {logo && (
+                        <img src={logo} alt={`${received.name ?? handle} logo`} style={{
+                            height: '70px',
+                            backgroundColor: '#0a3c69',
+                        }}/>
+                    )}
+                    </div>
+
+                    <h1 className="text-base font-medium" style={{color: '#777777', fontWeight: 'bold'}}>{handle}</h1>
+                </div>
+
+                <section className="mt-6 space-y-4">
+                    {actions.map((a: Action) => (
+                        <Button key={a.id} href={a.href} title={a.title} subtitle={a.subtitle} icon={a.icon}
+                                color={color}/>
+                    ))}
+                </section>
+
+                <div className="my-8 flex items-center" aria-hidden>
+                    <div className="h-px w-full bg-black/10"/>
+                </div>
+
+                <section className="space-y-4">
+                    {socials.map((s: { id: string; title: string; subtitle?: string; href: string }) => (
+                        <Button key={s.id} href={s.href} title={s.title} subtitle={s.subtitle} color={color}/>
+                    ))}
+                </section>
+
+                {received.footer && (
+                    <footer className="text-center text-xs text-black/50 mt-10">
+                        {received.footer.text} <a className="underline" href={received.footer.href} target="_blank"
+                                                  rel="noopener noreferrer">{received.footer.linkText}</a>
+                    </footer>
+                )}
+            </main>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }
